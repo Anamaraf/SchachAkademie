@@ -47,6 +47,21 @@ function assert(cond, msg) {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push("pageerror: " + e.message));
+  /* Sprachausgabe durch eine Attrappe ersetzen: headless Chromium hat keine
+     Stimmen, gesprochen werden soll aber trotzdem geprüft werden. */
+  await context.addInitScript(() => {
+    window.__spoken = [];
+    window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+    Object.defineProperty(window, "speechSynthesis", {
+      configurable: true,
+      value: {
+        getVoices: () => [],
+        speak: u => window.__spoken.push(u.text),
+        cancel: () => { },
+        addEventListener: () => { }
+      }
+    });
+  });
   /* Audio-Kontexte mitschreiben, ohne die App dafür anzufassen. */
   await context.addInitScript(() => {
     const Real = window.AudioContext || window.webkitAudioContext;
@@ -104,6 +119,25 @@ function assert(cond, msg) {
   assert(audio.count === 1, "erste Berührung legt den Audio-Kontext an");
   assert(audio.states.length > 0 && audio.states.every(st => st === "running"), "Audio-Kontext läuft (" + (audio.states.join(", ") || "keiner") + ")");
   await tone.close();
+
+  console.log("Vorlesen");
+  const read = await context.newPage();
+  await read.goto(base);
+  await read.waitForSelector("#btnGo");
+  await read.click("#btnGo");
+  await read.waitForSelector("#scr-home.active");
+  await read.waitForFunction(() => window.__spoken.length > 0, null, { timeout: 5000 }).catch(() => { });
+  const spoken = await read.evaluate(() => window.__spoken);
+  assert(spoken.length > 0, "Pia spricht ihre Sprechblase (" + JSON.stringify(spoken[0] || "") + ")");
+  assert(spoken.every(t => !/\p{Extended_Pictographic}/u.test(t)), "keine Emojis in der Sprachausgabe");
+  assert(spoken.every(t => t.trim().length > 0), "keine leeren Ansagen");
+  /* Ausschalten muss auch wirklich still sein. */
+  await read.click("#btnVoice");
+  const before = await read.evaluate(() => { window.__spoken.length = 0; return document.getElementById("btnVoice").textContent; });
+  await read.click("#homeBubble");
+  await read.waitForTimeout(400);
+  assert(await read.evaluate(() => window.__spoken.length) === 0, "ausgeschaltet bleibt es still (Knopf zeigt " + before + ")");
+  await read.close();
 
   console.log("Offline");
   await context.setOffline(true);

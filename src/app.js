@@ -44,7 +44,8 @@ function defaultState() {
   return {
     v: 2, name: "Laura", stars: {}, wins: 0, winsEnd: 0, winsFull: 0, losses: 0, duels: 0,
     rewardCredits: 0, sessions: 0, log: [], daily: { d: null, puzzles: [], wins: 0, claimed: false },
-    srs: {}, stickers: [], design: "classic", level: 1, lastResults: [], hints: 0, seenDesigns: ["classic"]
+    srs: {}, stickers: [], design: "classic", level: 1, lastResults: [], hints: 0, seenDesigns: ["classic"],
+    speak: true
   };
 }
 let S = defaultState();
@@ -93,6 +94,7 @@ function audio() {
 }
 const UNLOCK_EVENTS = ["pointerdown", "touchend", "keydown"];
 function unlockAudio() {
+  greetOnFirstTouch();
   const ac = audio();
   if (ac && ac.state === "running") {
     for (const ev of UNLOCK_EVENTS) window.removeEventListener(ev, unlockAudio);
@@ -117,6 +119,106 @@ const sndGood = () => { beep(523, .1); setTimeout(() => beep(659, .12), 90); set
 const sndBad = () => beep(180, .25, "sawtooth");
 const SND = { move: sndMove, capture: sndCapture, good: sndGood, bad: sndBad };
 
+/* ---------- Vorlesen ----------
+   Pia liest ihre Sprechblasen und die Aufgabenerklärung vor, damit auch ein
+   Kind mitkommt, das noch nicht flüssig liest. Statt an dreißig Stellen
+   einzeln vorzulesen, beobachtet ein MutationObserver die Blasen: Was sichtbar
+   neu erscheint, wird gesprochen. Emojis fliegen vorher raus, sonst liest die
+   Stimme "Sternchen" vor oder stockt. */
+const Voice = {
+  ok: typeof window.speechSynthesis !== "undefined" && typeof window.SpeechSynthesisUtterance !== "undefined",
+  voice: null,
+  last: "",
+  started: false,
+  pickVoice() {
+    if (!this.ok) return null;
+    const all = speechSynthesis.getVoices() || [];
+    this.voice = all.find(v => /^de[-_]DE/i.test(v.lang) && v.localService)
+      || all.find(v => /^de/i.test(v.lang)) || null;
+    return this.voice;
+  },
+  clean(text) {
+    return String(text)
+      .replace(/\p{Extended_Pictographic}/gu, " ")
+      .replace(/[\uFE0F\u200D]/g, "")
+      .replace(/\s+/g, " ").trim();
+  },
+  say(text) {
+    if (!this.ok || !S.speak) return;
+    const t = this.clean(text);
+    if (!t) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(t);
+      u.lang = "de-DE"; u.rate = .95; u.pitch = 1.1;
+      if (this.voice || this.pickVoice()) u.voice = this.voice;
+      /* started zählt nur, was wirklich zu hören war: Beim Laden blockieren
+         Handy-Browser die Ausgabe, und dann soll die Begrüßung beim ersten
+         Antippen noch kommen. */
+      u.onstart = () => { Voice.started = true; };
+      this.last = t;
+      speechSynthesis.speak(u);
+    } catch (e) { }
+  },
+  stop() { if (this.ok) { try { speechSynthesis.cancel(); } catch (e) { } } }
+};
+if (Voice.ok && typeof speechSynthesis.addEventListener === "function") {
+  speechSynthesis.addEventListener("voiceschanged", () => Voice.pickVoice());
+}
+
+/* Nur vorlesen, was gerade auf dem Bildschirm steht. */
+function speakVisible(el) {
+  const scr = el.closest(".screen");
+  return !scr || scr.classList.contains("active");
+}
+let speakPending = new Set(), speakTimer = null;
+function queueSpeak(el) {
+  if (!Voice.ok || !speakVisible(el)) return;
+  speakPending.add(el);
+  clearTimeout(speakTimer);
+  /* Kurz sammeln: Erklärung und Sprechblase ändern sich nacheinander, sollen
+     aber als ein Stück gesprochen werden statt sich gegenseitig abzuwürgen. */
+  speakTimer = setTimeout(flushSpeak, 80);
+}
+function flushSpeak() {
+  const els = [...speakPending].filter(speakVisible);
+  speakPending.clear();
+  if (!els.length) return;
+  els.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+  const t = Voice.clean(els.map(e => e.textContent).join(". "));
+  if (t && t !== Voice.last) Voice.say(t);
+}
+function initVoice() {
+  if (!Voice.ok) { $("btnVoice").style.display = "none"; return; }
+  for (const el of document.querySelectorAll(".bubble, #lessonbox")) {
+    new MutationObserver(() => queueSpeak(el)).observe(el, { childList: true, characterData: true, subtree: true });
+    /* Antippen liest noch einmal vor – auch denselben Text. */
+    el.addEventListener("click", () => Voice.say(el.textContent));
+  }
+  updateVoiceBtn();
+  $("btnVoice").addEventListener("click", () => {
+    S.speak = !S.speak; save(); updateVoiceBtn();
+    if (S.speak) Voice.say("Vorlesen ist an."); else Voice.stop();
+  });
+}
+function updateVoiceBtn() {
+  const b = $("btnVoice");
+  b.textContent = S.speak ? "\u{1F50A}" : "\u{1F507}";
+  b.classList.toggle("off", !S.speak);
+  b.setAttribute("aria-label", S.speak ? "Vorlesen ausschalten" : "Vorlesen einschalten");
+}
+/* Beim ersten Antippen begrüßen – vorher erlauben Handy-Browser kein Sprechen. */
+let greeted = false;
+function greetOnFirstTouch() {
+  if (greeted) return;
+  greeted = true;
+  setTimeout(() => {
+    if (Voice.started) return; // es war schon etwas zu hören
+    const b = document.querySelector(".screen.active .bubble");
+    if (b) Voice.say(b.textContent);
+  }, 250);
+}
+
 /* ---------- Hilfen ---------- */
 const $ = id => document.getElementById(id);
 const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -134,6 +236,10 @@ function show(id) {
   $("scr-" + id).classList.add("active");
   S.screen = id;
   window.scrollTo(0, 0);
+  /* Der Text des neuen Bildschirms steht oft schon, bevor er sichtbar wird –
+     darum hier noch einmal anstoßen statt nur auf Änderungen zu horchen. */
+  Voice.stop();
+  for (const el of $("scr-" + id).querySelectorAll(".bubble, #lessonbox")) queueSpeak(el);
 }
 function route(where) {
   stopReward();
@@ -1047,6 +1153,7 @@ $("btnReset").addEventListener("click", () => {
   document.querySelectorAll(".coach").forEach(c => c.insertAdjacentHTML("afterbegin", PIA_SVG));
   loadState();
   applyDesign();
+  initVoice();
   const stars = totalStars();
   $("startBubble").innerHTML = S.sessions === 0
     ? "Hallo <b>" + esc(S.name) + "</b>! Ich bin <b>Pia</b>, dein Bauern-Coach. Bereit für dein Training? 🌟"

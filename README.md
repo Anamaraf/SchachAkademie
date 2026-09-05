@@ -103,6 +103,24 @@ Dabei gefundene Fehler der ursprünglichen Aufgaben: „Matt in 1“ Nr. 2 hat *
 | 7 | Stockfish | Tiefe 8, Skill 8 |
 | 8 | Stockfish | Tiefe 12, Skill 15 |
 
+## Vorlesen
+
+Pia liest ihre Sprechblasen und die Aufgabenerklärung vor – gedacht für Kinder,
+die noch nicht flüssig lesen. Der Knopf 🔊 in der Kopfzeile schaltet das ein und
+aus, die Einstellung wird mitgespeichert. Ein Tipp auf eine Sprechblase liest
+sie noch einmal vor.
+
+Technisch steckt dahinter die Sprachausgabe des Geräts (`speechSynthesis`), es
+wird nichts nachgeladen. Auf Android bringt das System deutsche Stimmen mit; die
+App wählt bevorzugt eine lokal installierte, damit es auch offline klappt. Fehlt
+eine deutsche Stimme, bleibt es still – der Knopf verschwindet dann.
+
+Vorgelesen wird nicht bei jeder Änderung einzeln: Ein `MutationObserver` sammelt,
+was sichtbar neu erscheint, und spricht Erklärung und Sprechblase als ein Stück.
+Emojis werden vorher entfernt, sonst liest die Stimme „Sternchen“ mit. Beim Laden
+verbieten Handy-Browser das Sprechen; die Begrüßung kommt deshalb beim ersten
+Antippen.
+
 ## Speicherung
 
 Fortschritt liegt im `localStorage` des Browsers. Im Elternbereich lässt sich eine JSON-Sicherung speichern und auf einem anderen Gerät laden.
