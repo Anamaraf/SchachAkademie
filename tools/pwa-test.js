@@ -40,11 +40,21 @@ function assert(cond, msg) {
 (async () => {
   const server = await serve();
   const base = "http://127.0.0.1:" + server.address().port + "/";
-  const browser = await chromium.launch();
+  /* Strenge Autoplay-Regel wie auf dem Handy: Ton erst nach einer Nutzeraktion.
+     So fällt auf, wenn der Audio-Kontext angehalten bleibt. */
+  const browser = await chromium.launch({ args: ["--autoplay-policy=document-user-activation-required"] });
   const context = await browser.newContext({ viewport: { width: 420, height: 860 } });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push("pageerror: " + e.message));
+  /* Audio-Kontexte mitschreiben, ohne die App dafür anzufassen. */
+  await context.addInitScript(() => {
+    const Real = window.AudioContext || window.webkitAudioContext;
+    window.__ctx = [];
+    window.AudioContext = window.webkitAudioContext = class extends Real {
+      constructor(...a) { super(...a); window.__ctx.push(this); }
+    };
+  });
 
   console.log("Manifest und Icons");
   await page.goto(base);
@@ -76,6 +86,24 @@ function assert(cond, msg) {
   });
   assert(/^schach-akademie-/.test(cached.name), "Cache heißt " + cached.name);
   assert(cached.count >= 7, "App-Hülle liegt im Cache (" + cached.count + " Einträge)");
+
+  console.log("Ton");
+  const tone = await context.newPage();
+  await tone.goto(base);
+  await tone.waitForSelector("#btnGo");
+  assert(await tone.evaluate(() => window.__ctx.length) === 0,
+    "vor der ersten Berührung wird kein Audio-Kontext angelegt");
+  /* Klick auf eine neutrale Stelle ohne eigenen Handler: Nur der Entsperrer darf
+     hier greifen. Ohne ihn bliebe der Ton stumm, bis zufällig ein Klang fällig
+     ist – und dann steht der Kontext womöglich schon angehalten da. */
+  await tone.click("header");
+  const audio = await tone.evaluate(async () => {
+    await new Promise(r => setTimeout(r, 300));
+    return { count: window.__ctx.length, states: window.__ctx.map(c => c.state) };
+  });
+  assert(audio.count === 1, "erste Berührung legt den Audio-Kontext an");
+  assert(audio.states.length > 0 && audio.states.every(st => st === "running"), "Audio-Kontext läuft (" + (audio.states.join(", ") || "keiner") + ")");
+  await tone.close();
 
   console.log("Offline");
   await context.setOffline(true);

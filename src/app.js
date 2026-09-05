@@ -75,16 +75,40 @@ const totalStars = () => THEME_ORDER.reduce((n, t) => n + S.stars[t].length, 0);
 const themeDone = t => S.stars[t].length >= THEMES[t].list.length;
 const themeUnlocked = i => i === 0 || S.stars[THEME_ORDER[i - 1]].length >= 3;
 
-/* ---------- Sounds ---------- */
+/* ---------- Sounds ----------
+   Handy-Browser starten den Audio-Kontext angehalten und setzen ihn nur aus
+   einer echten Nutzeraktion heraus fort. Ohne resume() bleibt die App darum
+   stumm. Deshalb: bei der ersten Berührung entsperren und vor jedem Ton den
+   Zustand prüfen. Der Entsperrer bleibt hängen, bis der Kontext wirklich
+   läuft – resume() antwortet erst später. */
 let AC = null;
-function beep(freq, dur, type) {
+function audio() {
   try {
-    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-    const o = AC.createOscillator(), g = AC.createGain();
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    if (!AC) AC = new Ctx();
+    if (AC.state === "suspended") AC.resume().catch(() => { });
+    return AC;
+  } catch (e) { return null; }
+}
+const UNLOCK_EVENTS = ["pointerdown", "touchend", "keydown"];
+function unlockAudio() {
+  const ac = audio();
+  if (ac && ac.state === "running") {
+    for (const ev of UNLOCK_EVENTS) window.removeEventListener(ev, unlockAudio);
+  }
+}
+for (const ev of UNLOCK_EVENTS) window.addEventListener(ev, unlockAudio, { passive: true });
+
+function beep(freq, dur, type) {
+  const ac = audio();
+  if (!ac) return;
+  try {
+    const o = ac.createOscillator(), g = ac.createGain();
     o.type = type || "sine"; o.frequency.value = freq;
-    g.gain.value = .08; o.connect(g); g.connect(AC.destination);
-    o.start(); g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + dur);
-    o.stop(AC.currentTime + dur);
+    g.gain.value = .08; o.connect(g); g.connect(ac.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + dur);
+    o.stop(ac.currentTime + dur);
   } catch (e) { }
 }
 const sndMove = () => beep(440, .08, "triangle");

@@ -6,7 +6,7 @@
    Worker, legt einen frischen Cache an und wirft den alten weg. */
 "use strict";
 
-const VERSION = "17ae775dda28";
+const VERSION = "c849c754faab";
 const CACHE = "schach-akademie-" + VERSION;
 
 /* Die App selbst; Schrift, CSS und JS stecken bereits in dieser einen Datei. */
