@@ -14,16 +14,26 @@ Kindgerechte Schach-Lern-App (Deutsch) mit Coach **Pia**: Rätsel-Themen mit gep
 Die gebaute App ist eine PWA: einmal über `https://` geöffnet, lässt sie sich mit
 eigenem Icon auf den Startbildschirm legen und läuft danach ohne Internet.
 
-**1. Einmalig hosten – GitHub Pages**
+**1. Einmalig hosten**
 
-Im Repository unter *Settings → Pages* als Quelle **Branch `main`, Ordner `/ (root)`**
-wählen. Nach ein bis zwei Minuten liegt die App unter
-`https://<benutzername>.github.io/schachakademie/`.
+Zum Installieren muss die App über **`https://`** erreichbar sein – ohne das
+startet kein Service Worker, und ohne den gibt es weder Installation noch
+Offline-Betrieb. Einzige Ausnahme ist `http://localhost` zum Testen; eine
+Adresse im Heimnetz wie `http://192.168.0.5:8080` reicht **nicht**.
 
-Jeder andere Webspace geht genauso – gebraucht werden nur diese Dateien aus dem
-Projektstamm: `index.html`, `manifest.webmanifest`, `sw.js` und `icons/`.
-Wichtig ist `https://`, sonst startet der Service Worker nicht (Ausnahme:
-`http://localhost` zum Testen).
+*GitHub Pages:* Unter *Settings → Pages* als Quelle **Branch `main`, Ordner
+`/ (root)`** wählen. Nach ein bis zwei Minuten liegt die App unter
+`https://anamaraf.github.io/SchachAkademie/`.
+Achtung: Pages funktioniert bei **privaten** Repositories nur mit einem
+kostenpflichtigen Plan (GitHub Pro). Bei einem privaten Repo im Gratis-Plan
+also entweder das Repository öffentlich schalten oder einen anderen Hoster
+nehmen. Zu wissen ist dabei: Die veröffentlichte Seite ist in beiden Fällen
+öffentlich abrufbar, wer die Adresse kennt, sieht die App samt Namen.
+
+*Ohne GitHub:* Jeder Webspace mit HTTPS tut es. Am schnellsten geht
+[Netlify Drop](https://app.netlify.com/drop) – Ordner ins Browserfenster ziehen,
+fertig. Gebraucht werden nur diese Dateien aus dem Projektstamm:
+`index.html`, `manifest.webmanifest`, `sw.js` und `icons/`.
 
 **2. Auf dem Handy installieren**
 
