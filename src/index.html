@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Lauras Schach-Akademie</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#6C4BC4">
+<meta name="description" content="Kindgerechte Schach-Lern-App mit Coach Pia: Rätsel, Partien gegen Robi, Belohnungsspiele und Sticker-Album.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Schach-Akademie">
 <!-- BUILD:CSS --><link rel="stylesheet" href="style.css"><!-- /BUILD:CSS -->
 </head>
 <body>
@@ -221,5 +228,19 @@
 <script src="games.js"></script>
 <script src="app.js"></script>
 <!-- /BUILD:JS -->
+
+<script>
+/* Service Worker – nur über http(s). Als Einzeldatei per file:// gibt es keinen
+   Worker und keinen Cache; die App läuft dann wie bisher direkt aus der Datei. */
+(function () {
+  if (!("serviceWorker" in navigator)) return;
+  if (!/^https?:$/.test(location.protocol)) return;
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function (e) {
+      console.warn("Service Worker nicht registriert:", e && e.message);
+    });
+  });
+})();
+</script>
 </body>
 </html>

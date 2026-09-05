@@ -300,30 +300,50 @@
     });
     return this.readyPromise;
   };
+  /* Baut den Worker. Die CDN-Quelle wird zuerst per fetch geholt und dann als
+     Blob gestartet: Diese Anfrage läuft durch den Service Worker und landet in
+     dessen Cache, damit Stockfish später auch offline zur Verfügung steht.
+     Scheitert das (kein CORS, kein fetch), wird wie bisher per importScripts geladen. */
+  StockfishEngine.prototype.makeWorker = async function (src) {
+    if (src.local) return new Worker(src.url);
+    const asWorker = code => new Worker(URL.createObjectURL(new Blob([code], { type: "application/javascript" })));
+    try {
+      const res = await fetch(src.url, { mode: "cors", credentials: "omit" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return asWorker(await res.text());
+    } catch (e) {
+      return asWorker("importScripts(" + JSON.stringify(src.url) + ");");
+    }
+  };
   StockfishEngine.prototype.tryStart = function (src, timeoutMs) {
     const self = this;
     return new Promise((resolve, reject) => {
-      let worker;
-      try {
-        if (src.local) worker = new Worker(src.url);
-        else {
-          const blob = new Blob(["importScripts(" + JSON.stringify(src.url) + ");"], { type: "application/javascript" });
-          worker = new Worker(URL.createObjectURL(blob));
-        }
-      } catch (e) { return reject(e); }
-      const timer = setTimeout(() => { worker.terminate(); reject(new Error("Zeitüberschreitung: " + src.url)); }, timeoutMs);
-      worker.onerror = e => { clearTimeout(timer); worker.terminate(); reject(new Error("Worker-Fehler: " + (e.message || src.url))); };
-      worker.onmessage = e => {
-        const line = typeof e.data === "string" ? e.data : (e.data && e.data.data) || "";
-        if (line.startsWith("uciok")) { worker.postMessage("isready"); }
-        else if (line.startsWith("readyok")) {
-          clearTimeout(timer);
-          worker.onmessage = ev => self.onLine(typeof ev.data === "string" ? ev.data : (ev.data && ev.data.data) || "");
-          worker.onerror = null;
-          resolve(worker);
-        }
-      };
-      worker.postMessage("uci");
+      let worker = null, done = false;
+      const timer = setTimeout(() => {
+        done = true;
+        if (worker) worker.terminate();
+        reject(new Error("Zeitüberschreitung: " + src.url));
+      }, timeoutMs);
+      self.makeWorker(src).then(w => {
+        if (done) { w.terminate(); return; }
+        worker = w;
+        wire();
+      }, e => { clearTimeout(timer); reject(e); });
+
+      function wire() {
+        worker.onerror = e => { clearTimeout(timer); worker.terminate(); reject(new Error("Worker-Fehler: " + (e.message || src.url))); };
+        worker.onmessage = e => {
+          const line = typeof e.data === "string" ? e.data : (e.data && e.data.data) || "";
+          if (line.startsWith("uciok")) { worker.postMessage("isready"); }
+          else if (line.startsWith("readyok")) {
+            clearTimeout(timer);
+            worker.onmessage = ev => self.onLine(typeof ev.data === "string" ? ev.data : (ev.data && ev.data.data) || "");
+            worker.onerror = null;
+            resolve(worker);
+          }
+        };
+        worker.postMessage("uci");
+      }
     });
   };
   StockfishEngine.prototype.onLine = function (line) { for (const l of this.listeners.slice()) l(line); };
