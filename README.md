@@ -74,7 +74,8 @@ SchachAkademie/
     ├── make-icons.js     erzeugt icons/ neu (nur bei Motivwechsel): node tools/make-icons.js
     ├── verify-puzzles.js prüft alle Rätsel maschinell:            node tools/verify-puzzles.js [--verbose]
     ├── smoke-test.js     Browser-Test der Einzeldatei:            node tools/smoke-test.js [--shots DIR]
-    └── pwa-test.js       prüft Installierbarkeit und Offline-Lauf: node tools/pwa-test.js
+    ├── pwa-test.js       prüft Installierbarkeit und Offline-Lauf: node tools/pwa-test.js
+    └── layout-test.js    prüft quadratische Felder auf allen Größen: node tools/layout-test.js
 ```
 
 Die beiden gebauten HTML-Dateien sind inhaltsgleich. Wird die Einzeldatei allein

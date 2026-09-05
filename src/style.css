@@ -101,8 +101,12 @@ button{font-family:inherit; border:none; cursor:pointer;}
 .mission.complete{border:2px solid var(--ok);}
 
 /* ---------- Brett ---------- */
-.boardwrap{touch-action:none; user-select:none; position:relative;}
-.board{display:grid; grid-template-columns:repeat(8,1fr);
+/* Das Brett ist immer quadratisch: feste 8 Zeilen und 8 Spalten, sonst richten
+   sich die Zeilen nach ihrem Inhalt und leere Reihen fallen zusammen. Der
+   Rahmen darf im Spalten-Layout auch nicht gestaucht werden (flex:0 0 auto),
+   sonst passt die Höhe nicht mehr zum Seitenverhältnis. */
+.boardwrap{touch-action:none; user-select:none; position:relative; flex:0 0 auto;}
+.board{display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
   border-radius:14px; overflow:hidden; box-shadow:0 5px 0 rgba(53,40,78,.15);
   aspect-ratio:1/1; width:100%; position:relative;}
 .sq{position:relative; display:flex; align-items:center; justify-content:center;
