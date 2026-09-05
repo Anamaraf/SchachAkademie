@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lauras Schach-Akademie</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- BUILD:CSS --><link rel="stylesheet" href="style.css"><!-- /BUILD:CSS -->
+</head>
+<body>
+
+<header>
+  <div class="brand">♟️ Lauras <span>Schach-Akademie</span></div>
+  <div class="session" id="sessionClock">30:00</div>
+</header>
+
+<main>
+
+  <!-- ============ START ============ -->
+  <section class="screen active" id="scr-start">
+    <div class="coach"><div class="bubble" id="startBubble">Hallo <b>Laura</b>! Ich bin <b>Pia</b>, dein Bauern-Coach. Bereit für dein Training? 🌟</div></div>
+    <button class="btn honey" id="btnGo">Los geht's! 🚀</button>
+    <div class="lessonbox" id="startInfo" style="display:none"></div>
+  </section>
+
+  <!-- ============ HOME ============ -->
+  <section class="screen" id="scr-home">
+    <div class="coach"><div class="bubble" id="homeBubble">Was möchtest du üben, Laura?</div></div>
+
+    <div>
+      <div class="progressbar"><div id="xpbar"></div></div>
+      <div class="plabel" id="xplabel">Weg zum Turmdiplom</div>
+    </div>
+
+    <div class="mission" id="missionBox">
+      <h4>🎯 Tagesmission</h4>
+      <div class="tasks">
+        <div class="task" id="taskPuzzles">🧩 Löse 3 Rätsel <span class="cnt">0/3</span><div class="bar"><div></div></div></div>
+        <div class="task" id="taskWin">🏆 Gewinne 1 Partie <span class="cnt">0/1</span><div class="bar"><div></div></div></div>
+      </div>
+      <p id="missionText" style="margin:8px 0 0;font-size:.85rem;opacity:.8">Schaffst du beides, gibt es ein Extra-Belohnungsticket! 🎟️</p>
+    </div>
+
+    <div class="mode" data-go="puzzles">
+      <div class="emoji">🧩</div>
+      <div><h3>Rätsel-Training</h3><p>Kleine Aufgaben, große Tricks</p></div>
+      <div class="stars" id="starsPuzzles">⭐ 0</div>
+    </div>
+
+    <div class="mode due" id="tile-review" data-go="review" style="display:none">
+      <div class="emoji">🔁</div>
+      <div><h3>Wiederholung</h3><p id="reviewHint">Rätsel, die du nochmal üben solltest</p></div>
+      <div class="stars" id="reviewCount">0</div>
+    </div>
+
+    <div class="mode" data-go="endgame">
+      <div class="emoji">🏰</div>
+      <div><h3>Turm-Endspiel</h3><p>Setze den König matt – nur mit dem Turm!</p></div>
+      <div class="stars" id="starsEnd">🏆 0</div>
+    </div>
+
+    <div class="mode" data-go="fullgame">
+      <div class="emoji">🤖</div>
+      <div><h3>Partie gegen Robi</h3><p id="robiHint">Eine ganze Partie – Pia hilft dir</p></div>
+      <div class="stars" id="starsFull">🏆 0</div>
+    </div>
+
+    <div class="mode" data-go="duel">
+      <div class="emoji">👨‍👩‍👧</div>
+      <div><h3>Familien-Duell</h3><p>Zwei Spieler an einem Gerät – Pia kommentiert</p></div>
+      <div class="stars" id="starsDuel">🤝 0</div>
+    </div>
+
+    <div class="mode" id="rewardTile" data-go="reward">
+      <div class="emoji">🕹️</div>
+      <div><h3>Belohnungs-Spiel</h3><p id="rewardHint">Gewinne eine Partie, um zu spielen!</p></div>
+      <div class="stars" id="rewardLock">🔒</div>
+    </div>
+
+    <div class="grid2">
+      <div class="mode" data-go="album"><div class="emoji">📒</div><div><h3>Sticker-Album</h3></div><div class="stars" id="albumCount">0/9</div></div>
+      <div class="mode" data-go="designs"><div class="emoji">🎨</div><div><h3>Brett-Designs</h3></div><div class="stars" id="designCount">1/6</div></div>
+      <div class="mode" data-go="certificate"><div class="emoji">📜</div><div><h3>Urkunde</h3></div><div class="stars">🖨️</div></div>
+      <div class="mode" data-go="parents"><div class="emoji">👪</div><div><h3>Eltern</h3></div><div class="stars">⚙️</div></div>
+    </div>
+  </section>
+
+  <!-- ============ PUZZLE MENU ============ -->
+  <section class="screen" id="scr-puzzlemenu">
+    <div class="coach"><div class="bubble" id="puzzleMenuBubble">Such dir ein Thema aus! Jede gelöste Aufgabe gibt einen Stern. ⭐</div></div>
+    <div id="themeTiles" class="list"></div>
+    <div class="btnrow">
+      <button class="btn ghost small" data-go="home">← Zurück</button>
+      <div class="spacer"></div>
+      <button class="btn ghost small" data-go="mistakes">📋 Fehlerliste</button>
+    </div>
+  </section>
+
+  <!-- ============ PUZZLE PLAY ============ -->
+  <section class="screen" id="scr-puzzle">
+    <div class="lessonbox" id="lessonbox"></div>
+    <div class="boardwrap" id="boardwrap"><div id="board" class="board"></div><svg class="arrows" id="arrows" viewBox="0 0 8 8"></svg></div>
+    <div class="coach"><div class="bubble" id="puzzleBubble"></div></div>
+    <div class="btnrow">
+      <button class="btn ghost small" id="btnPuzzleBack">← Themen</button>
+      <div class="spacer"></div>
+      <button class="btn ghost small" id="btnWhy" style="display:none">🔍 Zeig mir warum</button>
+      <button class="btn honey small" id="btnHint">💡 Tipp</button>
+    </div>
+  </section>
+
+  <!-- ============ FEHLERLISTE ============ -->
+  <section class="screen" id="scr-mistakes">
+    <div class="coach"><div class="bubble">Hier siehst du, welche Rätsel dir schwerfallen. Fehler sind super – daraus lernst du am meisten! 🧠</div></div>
+    <div class="list" id="mistakeList"></div>
+    <button class="btn ghost" data-go="puzzles">← Zurück</button>
+  </section>
+
+  <!-- ============ GAME (endgame, full, duel) ============ -->
+  <section class="screen" id="scr-game">
+    <div class="turnbar" id="turnbar" style="display:none"><span id="tbWhite">⬜ Weiß</span><span id="tbBlack">⬛ Schwarz</span></div>
+    <div class="boardwrap" id="boardwrap2"><div id="board2" class="board"></div><svg class="arrows" id="arrows2" viewBox="0 0 8 8"></svg></div>
+    <div class="coach"><div class="bubble" id="gameBubble"></div></div>
+    <div class="btnrow" id="warnRow" style="display:none">
+      <button class="btn honey small" id="btnTakeback">↩️ Zurücknehmen</button>
+      <button class="btn ghost small" id="btnKeep">Weiterspielen</button>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost small" data-go="home">← Menü</button>
+      <div class="spacer"></div>
+      <span class="small" id="levelBadge" style="align-self:center;opacity:.7"></span>
+      <button class="btn ghost small" id="btnUndo">↩️ Zug zurück</button>
+    </div>
+  </section>
+
+  <!-- ============ REWARD GAMES ============ -->
+  <section class="screen" id="scr-reward">
+    <div class="arkhud"><span id="hudLeft">❤️❤️❤️</span><span id="hudMid">5:00</span><span id="hudRight">0</span></div>
+    <div id="gamewrap"><canvas id="rewardCanvas" width="360" height="480"></canvas></div>
+    <div class="padrow" id="tetrisPad" style="display:none">
+      <button data-k="left">◀️</button><button data-k="rot">🔄</button><button data-k="right">▶️</button><button data-k="down">⬇️</button>
+    </div>
+    <div class="coach"><div class="bubble" id="rewardBubble">Du hast es dir verdient! 🎉</div></div>
+    <button class="btn ghost" id="btnRewardExit">Fertig – zurück zum Schach</button>
+  </section>
+
+  <!-- ============ ALBUM ============ -->
+  <section class="screen" id="scr-album">
+    <div class="coach"><div class="bubble" id="albumBubble">Für jedes fertige Thema bekommst du eine Sammelfigur. Die leeren Plätze warten auf dich! ✨</div></div>
+    <div class="album" id="albumGrid"></div>
+    <button class="btn ghost" data-go="home">← Zurück</button>
+  </section>
+
+  <!-- ============ DESIGNS ============ -->
+  <section class="screen" id="scr-designs">
+    <div class="coach"><div class="bubble" id="designBubble">Sammle Sterne und schalte neue Brett-Designs frei! 🎨</div></div>
+    <div class="list" id="designList"></div>
+    <button class="btn ghost" data-go="home">← Zurück</button>
+  </section>
+
+  <!-- ============ URKUNDE ============ -->
+  <section class="screen" id="scr-certificate">
+    <div class="coach noprint"><div class="bubble" id="certBubble">Deine Wochenurkunde! Drucke sie aus und häng sie auf. 🖨️</div></div>
+    <div class="btnrow noprint" id="certTabs">
+      <button class="btn ghost small" id="btnCertWeek">📜 Wochenurkunde</button>
+      <button class="btn ghost small" id="btnCertDiplom">🏰 Turmdiplom</button>
+    </div>
+    <div class="cert" id="cert"></div>
+    <div class="btnrow noprint">
+      <button class="btn ghost small" data-go="home">← Zurück</button>
+      <div class="spacer"></div>
+      <button class="btn honey small" id="btnPrint">🖨️ Drucken</button>
+    </div>
+  </section>
+
+  <!-- ============ ELTERN ============ -->
+  <section class="screen" id="scr-parents">
+    <div class="coach"><div class="bubble">Elternbereich: Fortschritt sichern, Namen ändern, Engine-Status prüfen.</div></div>
+    <div class="lessonbox">
+      <h4>👧 Name des Kindes</h4>
+      <input type="text" id="inpName" maxlength="20" placeholder="Laura">
+    </div>
+    <div class="lessonbox" id="storageInfo"><h4>💾 Speicherung</h4><p id="storageText">…</p>
+      <div class="btnrow">
+        <button class="btn ghost small" id="btnExport">⬇️ Sicherung speichern</button>
+        <button class="btn ghost small" id="btnImport">⬆️ Sicherung laden</button>
+        <input type="file" id="fileImport" accept="application/json" style="display:none">
+      </div>
+    </div>
+    <div class="lessonbox" id="engineInfo"><h4>🧠 Stockfish-Engine</h4><p id="engineText">Noch nicht geladen.</p>
+      <button class="btn ghost small" id="btnEngineTest">Engine jetzt laden</button>
+    </div>
+    <div class="lessonbox"><h4>📊 Statistik</h4><p id="statsText"></p></div>
+    <div class="btnrow">
+      <button class="btn ghost small" data-go="home">← Zurück</button>
+      <div class="spacer"></div>
+      <button class="btn ghost small" id="btnReset" style="color:var(--warn)">🗑️ Fortschritt löschen</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <div class="bigemoji" id="ovEmoji">🎉</div>
+    <h2 id="ovTitle"></h2>
+    <p id="ovText"></p>
+    <div id="ovExtra"></div>
+    <div class="btnrow" id="ovButtons"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<footer id="footer">Lauras Schach-Akademie · Fortschritt wird auf diesem Gerät gespeichert</footer>
+
+<!-- BUILD:JS -->
+<script src="chess.js"></script>
+<script src="ai.js"></script>
+<script src="puzzles.js"></script>
+<script src="games.js"></script>
+<script src="app.js"></script>
+<!-- /BUILD:JS -->
+</body>
+</html>
